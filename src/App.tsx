@@ -3,6 +3,7 @@ import { Menu, X, ArrowDownRight, ArrowUpRight, Github, Linkedin, Mail, Phone, M
 import React, { useState, useRef, useEffect } from "react";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
+console.log("ENV CHECK:", import.meta.env.VITE_GOOGLE_SHEET_URL);
 
 const PROJECTS = [
   {
@@ -117,36 +118,35 @@ function ContactForm() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatus('loading');
-    
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    
-    const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
-    
-    if (!GOOGLE_SHEET_URL) {
-      console.error("VITE_GOOGLE_SHEET_URL is not defined in environment variables.");
-      setStatus('error');
-      return;
-    }
+  e.preventDefault();
+  setStatus('loading');
 
-    try {
-      await fetch(GOOGLE_SHEET_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      setStatus('success');
-      (e.target as HTMLFormElement).reset();
-    } catch (error) {
-      console.error("Submission error:", error);
-      setStatus('error');
-    }
-  };
+  const formData = new FormData(e.currentTarget);
+  const data = Object.fromEntries(formData.entries());
+
+  const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
+
+  if (!GOOGLE_SHEET_URL) {
+    console.error("VITE_GOOGLE_SHEET_URL is not defined.");
+    setStatus('error');
+    return;
+  }
+
+  try {
+    await fetch(GOOGLE_SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(data),
+    });
+
+    setStatus('success');
+    (e.target as HTMLFormElement).reset();
+
+  } catch (error) {
+    console.error("Submission error:", error);
+    setStatus('error');
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
