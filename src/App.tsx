@@ -268,7 +268,7 @@ const ProjectMedia = ({ images, title, isHovered }: { images: string[], title: s
     if (isHovered || isMobile) {
       interval = setInterval(() => {
         setIndex((prev) => (prev + 1) % images.length);
-      }, 2000); // 2s per image
+      }, 1500); // 2s per image
     } else if (!isMobile) {
       setIndex(0); // Reset to first image when not hovered on desktop
     }
