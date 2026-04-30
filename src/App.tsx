@@ -3,7 +3,6 @@ import { Menu, X, ArrowDownRight, ArrowUpRight, Github, Linkedin, Mail, Phone, M
 import React, { useState, useRef, useEffect } from "react";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
-console.log("ENV CHECK:", import.meta.env.VITE_GOOGLE_SHEET_URL);
 
 const PROJECTS = [
   {
@@ -13,7 +12,7 @@ const PROJECTS = [
     tools: "Next.js, React.js, Express.js, Node.js, MongoDB, Tailwind CSS, REST APIs, JWT, Framer Motion",
     description: "A comprehensive multi-vendor marketplace named Vox-Market (EchoBazaar) where users can discover products across categories like Electronics, Clothing, and Home & Garden. Features a robust 'Become a Seller' module and a polished, responsive e-commerce UI.",
     images: [
-          "/vox1.4.png", "/vox2.png", "/vox3.png",
+       "/vox1.4.png", "/vox2.png", "/vox3.png",
       "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200", // Hero/Store vibes
       "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200", // Electronics/Categories
       "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=1200"  // Featured Products
@@ -27,7 +26,7 @@ const PROJECTS = [
     tools: "React.js, Next.js, Node.js, Express.js, MongoDB, Tailwind CSS, REST APIs, JWT, AI Chatbot Integration, Framer Motion",
     description: "A comprehensive platform for salon owners and clients. Features include real-time booking, service management, an AI-powered chatbot for instant customer support, and a sleek interface for modern grooming businesses.",
     images: [
-     "/bar1.png", "/bar2.png", "/bar3.png",
+        "/bar1.png", "/bar2.png", "/bar3.png",
       "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80&w=1200"
@@ -41,7 +40,7 @@ const PROJECTS = [
     tools: "Next.js, Node.js, Express.js, Axios, Mongoose, JWT",
     description: "A web application to help developers discover and explore React/JS libraries. Features secure data handling and responsive design for seamless browsing.",
     images: [
-      "/react1.png", "/react2.png","/react3.1.png",
+       "/react1.png", "/react2.png","/react3.1.png",
       "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=1200"
@@ -118,35 +117,36 @@ function ContactForm() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setStatus('loading');
+    e.preventDefault();
+    setStatus('loading');
+    
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    
+    const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
+    
+    if (!GOOGLE_SHEET_URL) {
+      console.error("VITE_GOOGLE_SHEET_URL is not defined in environment variables.");
+      setStatus('error');
+      return;
+    }
 
-  const formData = new FormData(e.currentTarget);
-  const data = Object.fromEntries(formData.entries());
-
-  const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
-
-  if (!GOOGLE_SHEET_URL) {
-    console.error("VITE_GOOGLE_SHEET_URL is not defined.");
-    setStatus('error');
-    return;
-  }
-
-  try {
-    await fetch(GOOGLE_SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify(data),
-    });
-
-    setStatus('success');
-    (e.target as HTMLFormElement).reset();
-
-  } catch (error) {
-    console.error("Submission error:", error);
-    setStatus('error');
-  }
-};
+    try {
+      await fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      setStatus('success');
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      console.error("Submission error:", error);
+      setStatus('error');
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
@@ -252,18 +252,28 @@ const Magnetic = ({ children }: { children: React.ReactNode }) => {
 // Project Reel Component for "video-like" experience
 const ProjectMedia = ({ images, title, isHovered }: { images: string[], title: string, isHovered: boolean }) => {
   const [index, setIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // Using lg breakpoint as mobile/tablet for auto-scroll
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isHovered) {
+    if (isHovered || isMobile) {
       interval = setInterval(() => {
         setIndex((prev) => (prev + 1) % images.length);
-      }, 1500); // Change image every 1.5s on hover
-    } else {
-      setIndex(0); // Reset to first image when not hovered
+      }, 2000); // 2s per image
+    } else if (!isMobile) {
+      setIndex(0); // Reset to first image when not hovered on desktop
     }
     return () => clearInterval(interval);
-  }, [isHovered, images.length]);
+  }, [isHovered, isMobile, images.length]);
 
   return (
     <div className="w-full h-full relative bg-kinetic-ink">
@@ -276,7 +286,7 @@ const ProjectMedia = ({ images, title, isHovered }: { images: string[], title: s
           transition={{ duration: 0.5, ease: "linear" }}
           src={images[index]}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover grayscale transition-[filter] duration-700 group-hover:grayscale-0"
+          className={`absolute inset-0 w-full h-full object-cover grayscale transition-[filter] duration-700 ${isMobile ? 'grayscale-0' : 'group-hover:grayscale-0'}`}
           referrerPolicy="no-referrer"
         />
       </AnimatePresence>
@@ -567,12 +577,12 @@ export default function App() {
           </div>
 
           {/* Center part: The Photo (Still) */}
-          <div className="absolute inset-0 flex items-end justify-center pointer-events-none z-10">
+          <div className="absolute inset-0 flex items-end justify-center z-10">
              <div className="w-full h-full flex items-end justify-center">
                 <img 
                   src="/me.png"
                   alt="Mohammad Shadain"
-                  className="h-[60vh] sm:h-[75vh] md:h-[95vh] w-auto max-w-[95vw] md:max-w-none object-contain object-bottom grayscale brightness-110 contrast-110 drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500"
+                  className="h-[60vh] sm:h-[75vh] md:h-[95vh] w-auto max-w-[95vw] md:max-w-none object-contain object-bottom md:grayscale hover:grayscale-0 brightness-110 contrast-110 drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500"
                 />
              </div>
           </div>
@@ -866,21 +876,21 @@ export default function App() {
                             className="scale-x-[-1] drop-shadow-[0_10px_20px_rgba(255,255,255,0.05)]" // Fliped to point RIGHT
                           >
                             {/* Head */}
-                            <circle cx="60" cy="40" r="28" fill="#E5E5E5" stroke="#111" stroke-width="3"/>
+                            <circle cx="60" cy="40" r="28" fill="#E5E5E5" stroke="#111" strokeWidth="3"/>
                             {/* Eyes */}
                             <circle cx="50" cy="38" r="3" fill="#111"/>
                             <circle cx="70" cy="38" r="3" fill="#111"/>
                             {/* Body */}
-                            <rect x="35" y="65" width="50" height="45" rx="12" fill="#9CA3AF" stroke="#111" stroke-width="3"/>
+                            <rect x="35" y="65" width="50" height="45" rx="12" fill="#9CA3AF" stroke="#111" strokeWidth="3"/>
                             {/* Left Arm (Pointing) */}
-                            <line x1="35" y1="75" x2="15" y2="60" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+                            <line x1="35" y1="75" x2="15" y2="60" stroke="#111" strokeWidth="4" strokeLinecap="round"/>
                             {/* Pointing Hand */}
                             <circle cx="12" cy="58" r="5" fill="#111"/>
                             {/* Right Arm */}
-                            <line x1="85" y1="75" x2="100" y2="90" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+                            <line x1="85" y1="75" x2="100" y2="90" stroke="#111" strokeWidth="4" strokeLinecap="round"/>
                             {/* Legs */}
-                            <line x1="50" y1="110" x2="50" y2="130" stroke="#111" stroke-width="4" stroke-linecap="round"/>
-                            <line x1="70" y1="110" x2="70" y2="130" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+                            <line x1="50" y1="110" x2="50" y2="130" stroke="#111" strokeWidth="4" strokeLinecap="round"/>
+                            <line x1="70" y1="110" x2="70" y2="130" stroke="#111" strokeWidth="4" strokeLinecap="round"/>
                           </svg>
                         </motion.div>
                         
